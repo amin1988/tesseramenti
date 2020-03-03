@@ -1,0 +1,21 @@
+@media (min-width: 768px) {
+	.intestazione {
+		margin-bottom:10px;
+	}
+	
+	.check-tess {
+		text-align: right;
+	}
+	
+	.sesso {
+		text-align: center;
+	}
+}
+
+.tesserato:hover {
+	background-color: rgb(249, 249, 249);
+}
+
+.tesserato.errato, .tesserato.errato:hover {
+	background-color: rgb(242, 222, 222);
+}

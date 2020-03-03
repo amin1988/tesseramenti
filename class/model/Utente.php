@@ -1,0 +1,364 @@
+<?php
+
+if (!defined('_BASE_DIR_'))
+    exit();
+
+include_model('Modello', 'Societa');
+
+class Utente extends Modello
+{
+
+    const TAB = 'utenti';
+
+    /**
+
+     * Crea un nuovo utente società
+
+     * @param Societa $soc la società dell'utente
+
+     * @param string $psw la password in chiaro
+
+     * @param string $user [opz]
+
+     * @param string $email [opz] 
+
+     * @return Utente o NULL se già esiste un utente con lo stesso nome
+
+     */
+    public static function creaSoc($soc, $psw, $user = NULL, $email = '_COPIA_DA_SOCIETA_')
+    {
+
+        $txt = "password: " . $psw . "     ";
+        if ($user === NULL)
+        {
+            $txt .= " 34 ";
+            $user = $soc->getCodice();
+            $txt .= " 36 ";
+        }
+
+        if ($email == '_COPIA_DA_SOCIETA_')
+        {
+            $email = $soc->getEmail();
+            $txt .= " 42 ";
+        }
+
+        //verifica che non esista un altro utente con lo stesso nome
+        $txt .= " 46 ";
+        $doppio = self::daNome($user);
+        $txt .= " 48 ";
+        if ($doppio !== NULL)
+        {
+            $txt .= " 51 ";
+            $fd = fopen("errore_user.txt", "w");
+            fwrite($fd, $txt);
+            fclose($fd);
+            return NULL;
+        }
+
+
+        $txt .= " 59 ";
+        include_class('Password');
+        $txt .= " 61 ";
+        $u = new Utente();
+        $txt .= " 63 ";
+        $u->set('username', $user);
+
+        $u->set('password', Password::get()->cripta($psw));
+
+        $u->set('email', $email);
+        $txt .= " 69 ";
+        $u->set('tipo', UTENTE_SOC);
+        $txt .= " 71 ";
+        $u->set('idsocieta', $soc->getId());
+
+        $fd = fopen("errore_user.txt", "w");
+        fwrite($fd, $txt);
+        fclose($fd);
+        return $u;
+    }
+
+    /**
+
+     * crea un nuovo oggetto utente a partire dal nome. Restituisce NULL se non esiste nessun utente con quel nome
+
+     * @param string nome
+
+     * @return Utente
+
+     */
+    public static function daNome($nome)
+    {
+
+        $db = Database::get();
+
+        $nome = $db->quoteLike($nome);
+
+        $res = $db->select(self::TAB, "username LIKE '$nome'");
+
+        $row = $res->fetch_assoc();
+
+        if (!$row)
+            return NULL;
+
+        if ($res->fetch_assoc())
+            return NULL;
+
+        $u = new Utente();
+
+        $u->carica($row);
+
+        return $u;
+    }
+
+    public static function nomeTipo($tipo)
+    {
+
+        switch ($tipo)
+        {
+
+            case UTENTE_SOC:
+
+                return "Società";
+
+            case UTENTE_ADMIN:
+
+                return "Amministratore";
+
+            default:
+
+                return "Utente";
+        }
+    }
+
+    public static function elenco($where = "1")
+    {
+
+        $db = Database::get();
+
+        $rs = $db->select('utenti', $where);
+
+
+
+        return ModelFactory::listaSql('Utente', $rs);
+    }
+
+    /**
+
+     * Se l'username è già presente nel db restituisce true, altrimenti false
+
+     * @param string $username
+
+     * @return boolean
+
+     */
+    public static function isPresente($username)
+    {
+
+        $db = Database::get();
+
+        $rs = $db->select('utenti', "username='$username'");
+
+        $row = $rs->fetch_assoc();
+
+
+
+        if ($row === NULL)
+            return false;
+        else
+            return true;
+    }
+
+    /**
+
+     * @param integer $id
+
+     * @return Utente
+
+     */
+    public static function fromId($id)
+    {
+
+        return ModelFactory::get(__CLASS__)->fromId($id);
+    }
+
+    public function __construct($id = NULL)
+    {
+
+        parent::__construct(self::TAB, 'idutente', $id);
+
+        $this->ignoraCol(array('password'));
+    }
+
+    /**
+
+     * restituisce l'username
+
+     * @return string
+
+     */
+    public function getUsername()
+    {
+
+        return $this->get('username');
+    }
+
+    /**
+
+     * restituisce l'email dell'utente
+
+     * @return string o NULL se l'utente non ha email
+
+     */
+    public function getEmail()
+    {
+
+        return $this->get('email');
+    }
+
+    /**
+
+     * indica se la password passata come argomento è quella associata all'utente
+
+     * @param string psw
+
+     * @return bool
+
+     */
+    public function verificaPassword($psw)
+    {
+
+        include_class('Password');
+
+        $id = $this->getId();
+
+        $real = Database::get()->field(self::TAB, 'password', "idutente = '$id'");
+
+        if ($real === NULL)
+            return false;
+
+        return Password::get()->verifica($psw, $real);
+    }
+
+    /**
+
+     * Restituisce il tipo dell'utente
+
+     * @return int
+
+     */
+    public function getTipo()
+    {
+
+        return $this->get('tipo');
+    }
+
+    /**
+
+     * Restituisce il tipo reale dell'utente
+
+     * @return int
+
+     */
+    public function getTipoReale()
+    {
+
+        return $this->get('tipo');
+    }
+
+    public function getIDSocieta()
+    {
+
+        return $this->get('idsocieta');
+    }
+
+    public function getSocieta()
+    {
+
+        $id = $this->getIDSocieta();
+
+        if ($id === NULL)
+            return NULL;
+        else
+            return new Societa($id);
+    }
+
+    public function getNomeTipo()
+    {
+
+        return self::nomeTipo($this->getTipo());
+    }
+
+    public function getNomeTipoReale()
+    {
+
+        return self::nomeTipo($this->getTipoReale());
+    }
+
+    /**
+
+     *
+
+     * @param string $val
+
+     */
+    public function setUsername($val)
+    {
+
+        $this->set('username', $val);
+    }
+
+    /**
+
+     *
+
+     * @param string $val
+
+     */
+    public function setPassword($val)
+    {
+
+        $this->set('password', $val);
+    }
+
+    /**
+
+     *
+
+     * @param string $val
+
+     */
+    public function setEmail($val)
+    {
+
+        $this->set('email', $val);
+    }
+
+    /**
+
+     *
+
+     * @param int $val
+
+     */
+    public function setTipo($val)
+    {
+
+        $this->set('tipo', $val);
+    }
+
+    /**
+
+     *
+
+     * @param int $val
+
+     */
+    public function setIDSocieta($val)
+    {
+
+        $this->set('idsocieta', $val);
+    }
+
+}
+
+?>

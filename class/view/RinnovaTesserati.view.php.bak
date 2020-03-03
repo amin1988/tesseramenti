@@ -1,0 +1,213 @@
+<?php
+if (!defined("_BASE_DIR_")) exit();
+include_class('Sesso');
+include_controller('RinnovaTesserati');
+include_formview('FormView');
+include_view('WaitingView','QualificaView');
+
+class RinnovaTesserati extends ViewWithForm {
+	
+	const FASE_TESS_1 = 1;
+	const FASE_TESS_2 = 2;
+	const FASE_TESS_3 = 3;
+	const FASE_TESS_4 = 4;
+	const FASE_TESS_5 = 5;
+	const FASE_TESS_6 = 6;
+	
+	private $ctrl;
+	private $pulsanti;
+	/**
+	 * @var WaitingView
+	 */
+	private $wait;
+	/**
+	 * @var QualificaView[]
+	 */
+	private $qualview;
+	private $callback;
+	
+	public function stampaJsOnload() {
+		echo "rinnovaOnLoad();\n";
+	}
+	
+	public function getJsInclude() {
+		 return array('rinnova_tess');
+	}
+	
+	public function getCssInclude() {
+		return array('rinnova_tess');
+	}
+	
+	/**
+	 * @param int $idsoc
+	 * @param bool $rinnovo [def:false] true per considerare solo i tipi rinnovati 
+	 * @param callable $callback [opz] funzione da chiamare in caso di operazione effettuata correttamente
+	 * @param boolean $pulsanti [def:true] true per stampare i pulsanti e chiudere il form
+	 * @param int $fase la fase del rinnovo dei tesserati, ora vengono divisi per iniziale del cognome
+	 */
+	public function __construct($idsoc, $rinnovo=false, $callback=NULL, $pulsanti=true, $fase=NULL, $callback_ctrl) {
+		$this->ctrl = new RinnovaTesseratiCtrl($idsoc, $rinnovo, $callback_ctrl, $fase);
+		if ($pulsanti) $this->ctrl->getForm()->addSubmit('Salva');
+		$this->form = new FormView($this->ctrl->getForm());
+		$this->callback = $callback;
+		$this->pulsanti = $pulsanti;
+		$this->wait = new WaitingView(array($this, 'stampaInner'));
+		
+		foreach ($this->ctrl->getSettori() as $idsett=>$sett) {
+			$tipi_sett = $this->ctrl->getTipi($idsett);
+			foreach ($tipi_sett as $idtipo=>$tipo) {
+				$this->qualview[$idtipo] = QualificaViewUtil::get()->getView($idtipo,
+						FormRinnovo::GRADO, $this->form);
+			}
+		}
+	}
+	
+	public function getSubview() {
+		return array_merge(array($this->form, $this->wait), $this->qualview);
+	} 
+	
+	private function stampaRigaTess($key, $val, $span, $offset=0) {
+		echo "<div class=\"$key span$span";
+		if ($offset>0) echo " offset$offset";
+		echo "\">$val</div>";
+	}
+	
+	/**
+	 * 
+	 * @param integer $idtess
+	 * @param Tipo $tipo
+	 * @param FormView $fv
+	 */
+	private function stampaRigaTipo($idtess, $tipo, $fv) {
+		$idtipo = $tipo->getId();
+		$ka = array($idtess,$idtipo);
+		$ntipo = $tipo->getNome();
+		echo "<div class=\"row tipo$idtipo tipo\">";
+		echo '<div class="span3"><label class="checkbox">';
+		$fv->stampa(FormRinnovo::TIPO, $ka, array(
+				'class' => 'chk_tipo',
+				'data-tess' => $idtess,
+				'data-tipo' => $idtipo
+		));
+		echo " $ntipo</label></div><div class=\"span7\" id=\"grado_{$idtess}_{$idtipo}\">";
+		$qv = $this->qualview[$idtipo];
+		$qv->stampa($idtess);
+		
+		$err = $this->ctrl->getErrore(FormRinnovo::GRADO, $ka);
+		if ($err !== NULL)
+			echo "<span class=\"text-error msg-errore\">$err</span>";
+		
+		echo "</div></div>\n";
+	}
+	
+	public function stampa() {
+		if($this->pulsanti)//PAGINA ALTRI TESSERATI
+		{
+			echo '<ul class="breadcrumb">';
+		$fasi = array(
+				self::FASE_TESS_1 => 'Tesserati A-B',
+				self::FASE_TESS_2 => 'Tesserati C-D',
+				self::FASE_TESS_3 => 'Tesserati E-I',
+				self::FASE_TESS_4 => 'Tesserati J-M',
+				self::FASE_TESS_5 => 'Tesserati N-R',
+				self::FASE_TESS_6 => 'Tesserati S-Z',
+			);
+		foreach ($fasi as $fase => $nome) {
+			echo '<li>';
+			$attuale = ($fase == $this->ctrl->getFase());
+			if ($attuale)
+				echo '<strong>';
+			
+			$url = _PATH_ROOT_.call_user_func($this->callback, $fase);
+			if(!$attuale)
+				echo "<a href=\"$url\">";
+			echo $nome;
+			if(!$attuale)
+				echo '</a>';
+			
+			if ($attuale)
+				echo '</strong>';
+			if ($fase != self::FASE_TESS_6)
+				echo ' <span class="divider"><i class="icon-chevron-right"></i></span>';
+			echo "</li>\n";	
+		}
+		echo "</ul>\n\n";
+		}
+		$this->wait->stampa();
+	}
+	
+	public function stampaInner() {
+		$ltess = $this->ctrl->getTesserati();
+		$fv = $this->form;
+		
+		$fv->stampaInizioForm();
+		
+		if(count($ltess) == 0)
+			echo "<h4>Nessun tesserato</h4>";
+		else 
+		{
+			$col['nome'] = array('v'=>'Nominativo','s'=>7);
+			$col['sesso'] = array('v'=>'Sesso','s'=>1);
+			$col['nascita'] = array('v'=>'Data di nascita','s'=>3);
+			
+			echo '<div class="row intestazione">';
+			$offset = 1;
+			foreach ($col as $key=>$val) {
+				$this->stampaRigaTess($key, "<strong>{$val['v']}</strong>", $val['s'], $offset);
+				$offset=0;
+			}
+			echo '</div>';
+			foreach ($ltess as $idtess=>$tess)//per ogni tesserato
+			{
+				/* @var $tess Tesserato */
+				$lta = array();
+				$ltna = array();
+				$dati = array();
+				
+				$dati['nome'] = $tess->getCognome() .' '. $tess->getNome();
+				$dati['sesso'] = Sesso::toStringBreve($tess->getSesso());
+				$dati['nascita'] = $tess->getDataNascita()->format('d/m/Y');
+				$check_name = 'form_'.FormRinnovo::RINNOVA.FormElem::keyToString($idtess);
+	
+				$err = $this->ctrl->getErrore(FormRinnovo::RINNOVA, $idtess);
+				if ($err !== NULL)
+					$dati['nome'] .= " <span class=\"label label-important pull-right\">$err</span>";
+	
+				echo "\n".'<div class="row tesserato';
+				if ($this->ctrl->isTesseratoErrato($idtess)) 
+					echo ' errato';
+				echo '"><div class="check-tess span1">';
+				$fv->stampa(FormRinnovo::RINNOVA, $idtess, array('onclick'=>"toggleTipiBox($idtess, this)"));
+				echo "</div>";
+				foreach ($dati as $key=>$val) 
+					$this->stampaRigaTess($key, "<label for=\"$check_name\">$val</label>", $col[$key]['s']);
+				echo "</div>\n";
+				
+				echo '<div class="row"><div class="offset1 span11">';
+				echo "<div id=\"box-tess-$idtess\" class=\"box-tipi ";
+				if (!$this->form->getElem(FormRinnovo::RINNOVA, $idtess)->getFormElem()->getDefault())
+					 echo ' nascondi ';
+				
+				$ls = $this->ctrl->getSettori();
+				if (count($ls) == 0) {
+					echo ' alert">Questa società non ha nessun settore sportivo associato';
+				} else {
+					echo ' well well-small">';
+					foreach ($ls as $idsett=>$sett) {
+						echo '<h4>'.$sett->getNome()."</h4>\n";
+						foreach ($this->ctrl->getTipi($idsett) as $tipo)
+							$this->stampaRigaTipo($idtess, $tipo, $fv);
+					}
+				}
+				echo "</div></div></div>\n";
+			}
+		}
+		
+		if ($this->pulsanti) {
+			echo '<div class="form-actions text-right">';
+			$fv->stampaSubmit(array('class'=>'btn-primary'));
+			echo "</div>\n";
+			$fv->stampaFineForm();
+		}
+	}
+}

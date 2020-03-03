@@ -1,0 +1,97 @@
+<?php
+if (!defined("_BASE_DIR_")) exit();
+include_controller('SaldoPagamenti');
+include_model('Tipo');
+
+class SaldoPagamentiSett {
+	
+	private $ctrl;
+	private $id_sett;
+	private $anno;
+	
+	/**
+	 * @param int $id_soc
+	 * @param int $anno [def:0] 0 per l'anno attuale, 1 per il prossimo anno (rinnovo)
+	 * @param int $id_sett o int[] per stampare più settori, 
+	 * o NULL per chiedere i settori al controller
+	 */
+	public function __construct($id_soc, $anno=0, $id_sett=NULL)
+	{
+		$this->ctrl = SaldoPagamentiCtrl::get($id_soc);
+		$this->id_sett = $id_sett;
+		$this->anno = $anno;
+	}
+	
+	public function stampa()
+	{
+		if ($this->id_sett === NULL) {
+			$sett_list = $this->ctrl->getListaSettori($this->anno);
+		} elseif(!is_array($this->id_sett)) {
+			$sett_list = array($this->id_sett);
+		}
+		
+		echo '<table class="table table-condensed pagamenti-settori">';
+		echo "<tbody>";
+		foreach ($sett_list as $id_sett) {
+			if ($this->ctrl->haSettore($this->anno, $id_sett)) {
+				$set = Settore::fromId($id_sett)->getNome();
+				echo "<tr><th colspan=\"4\"><h3>Dettagli $set</h3></th></tr>";
+				echo "<tr><th></th><th style=\"text-align: right;\">Totale</th>";
+				echo "<th style=\"text-align: right;\">Saldato</th>";
+				echo "<th style=\"text-align: right;\">Da saldare</th></tr>";
+				
+				$tot = $this->euro($this->ctrl->getTotaleAff($this->anno, $id_sett));
+				$pag = $this->euro($this->ctrl->getPagatiAff($this->anno, $id_sett));
+				$das = $this->euro($this->ctrl->getScopertiAff($this->anno, $id_sett));
+				
+				echo "<tr><td>Affiliazione</td><td style=\"text-align: right;\">$tot</td>";
+				echo "<td style=\"text-align: right;\">$pag</td>";
+				echo "<td style=\"text-align: right;\">$das</td></tr>";
+				foreach(Tipo::getFromSettore($id_sett) as $id_tipo=>$tipo)
+				{
+					$numt = $this->ctrl->getTesseratiTipo($this->anno, $id_tipo);
+					$nome = $tipo->getPlurale();
+					
+					$tot = $this->euro($this->ctrl->getTotaleTipo($this->anno, $id_tipo));
+					$pag = $this->ctrl->getPagatiTipo($this->anno, $id_tipo);
+					$das = $this->ctrl->getScopertiTipo($this->anno, $id_tipo);
+					
+					if ($numt == 0) $class = ''; //nessuno
+					elseif ($das == 0) $class = 'badge-success'; //tutto pagato
+					elseif ($pag == 0) $class = 'badge-important'; //nessuno pagato
+					else $class = 'badge-warning'; //qualcuno pagato
+
+					$pag = $this->euro($pag);
+					$das = $this->euro($das);
+					
+					echo "<tr><td><span class=\"badge $class\">$numt</span> $nome</td>";
+					echo "<td style=\"text-align: right;\">$tot</td>";
+					echo "<td style=\"text-align: right;\">$pag</td>";
+					echo "<td style=\"text-align: right;\">$das</td></tr>";
+				}
+				
+				$tot = $this->euro($this->ctrl->getTotaleSett($this->anno, $id_sett));
+				$pag = $this->ctrl->getPagatiSett($this->anno, $id_sett);
+				$das = $this->ctrl->getScopertiSett($this->anno, $id_sett);
+				
+				if ($das == 0) $class = 'success'; //tutto pagato
+				elseif ($pag == 0) $class = 'error'; //niente pagato
+				else $class = 'warning'; //qualcosa pagato
+				
+				$pag = $this->euro($pag);
+				$das = $this->euro($das);
+				
+				echo "<tr class=\"$class\"><td class=\"totale\">Totale</td>";
+				echo "<td class=\"totale\" style=\"text-align: right;\">$tot</td>";
+				echo "<td class=\"totale\" style=\"text-align: right;\">$pag</td>";
+				echo "<td class=\"totale\" style=\"text-align: right;\">$das</td></tr>";
+			}
+		}
+		echo "</tbody></table>\n";
+		
+	}
+	
+	private function euro($num) {
+		return str_replace('.', ',', sprintf("&euro; %.2f",$num));
+	}
+}

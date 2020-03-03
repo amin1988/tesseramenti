@@ -1,0 +1,45 @@
+<html xmlns:x="urn:schemas-microsoft-com:office:excel">
+
+<head>
+
+    <!--[if gte mso 9]>
+
+    <xml>
+
+        <x:ExcelWorkbook>
+
+            <x:ExcelWorksheets>
+
+                <x:ExcelWorksheet>
+
+                    <x:Name>URBE KARATE asd</x:Name>
+
+                    <x:WorksheetOptions>
+
+                        <x:Print>
+
+                            <x:ValidPrinterInfo/>
+
+                        </x:Print>
+
+                    </x:WorksheetOptions>
+
+                </x:ExcelWorksheet>
+
+            </x:ExcelWorksheets>
+
+        </x:ExcelWorkbook>
+
+    </xml>
+
+    <![endif]-->
+
+    
+
+<meta charset="utf-8" />
+
+
+
+</head>
+
+<table border="1"><tr><td><strong>Nome</strong></td><td><strong>Cognome</strong></td><td><strong>Nome polizza </strong></td><td><strong>Nome societa</strong></td><td><strong>Data richiesta</strong></td><td><strong>Prezzo</strong></td><td><strong>Tipo polizza</strong></td></tr><tr><td  bgcolor="#FFFF00" >Roberto</td><td  bgcolor="#FFFF00" >Descontus</td><td  bgcolor="#FFFF00" >RC Tecnici Istruttori Allenatori e Maestri  </td><td  bgcolor="#FFFF00" >URBE KARATE asd</td><td  bgcolor="#FFFF00" >25-09-2019</td><td  bgcolor="#FFFF00" >00,00</td><td  bgcolor="#FFFF00" >Tesserato</td></tr><tr><td  bgcolor="#FFFF00" >Stefano</td><td  bgcolor="#FFFF00" >Crescenzi</td><td  bgcolor="#FFFF00" >Responsabilità civile operatori</td><td  bgcolor="#FFFF00" >URBE KARATE asd</td><td  bgcolor="#FFFF00" >25-09-2019</td><td  bgcolor="#FFFF00" >30,00</td><td  bgcolor="#FFFF00" >Tesserato</td></tr></table><br><br><table border="1"><tr><td><strong>Nome società</strong></td><td><strong>Totale da pagare</strong></td></tr><tr><td  bgcolor="#FF0000" >URBE KARATE asd</td><td  bgcolor="#FF0000" >&euro; 30,00</td></tr></table></html>

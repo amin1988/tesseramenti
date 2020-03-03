@@ -1,0 +1,67 @@
+#form_segnalazione {
+	margin: 0px;
+}
+
+.barra-menu {
+	margin-bottom: 25px;
+}
+
+.pagamenti-totali {
+	font-size: 170%;
+}
+
+.pagamenti-totali .row-fluid {
+	margin-top: 10px;
+}
+
+.pagamenti-settori th {
+	border-top: 0px none;
+}
+
+.pagamenti-settori .totale {
+	font-weight: bold;
+}
+
+.waiting {
+	background-image: url("../img/wait_small.gif") !important;
+	background-repeat: no-repeat !important;
+	background-position: right center !important;
+	padding-right: 25px !important;
+}
+
+.tab-label {
+	font-weight: bold;
+}
+
+@media (min-width: 768px) { 
+	.tab-label {
+		text-align: right;
+	}
+}
+
+a.modifica {
+	color: black;
+	text-decoration: none;
+	font-size: 10.5px;
+	vertical-align: top;
+}
+.modifica > span {
+	display: none;
+}
+.modifica:hover > span {
+	display: inline;
+}
+
+.attesa {
+	background-image:url('../img/wait.gif');
+	background-repeat:no-repeat;
+	background-position:center; 
+	height: 60px;
+}
+
+.attesa-small {
+	background-image:url('../img/wait-small.gif');
+	background-repeat:no-repeat;
+	background-position:center; 
+	height: 16px;
+}

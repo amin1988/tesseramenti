@@ -1,0 +1,89 @@
+<?php
+if (!defined("_BASE_DIR_")) exit();
+include_controller('Consiglio');
+include_model('Tesserato','Consiglio');
+include_view('NuovoTessPop');
+include_formview('FormView');
+
+class ModificaConsiglio extends ViewWithForm {
+	private $popup;
+	private $ctrl;
+	private $pulsanti;
+	
+	function __construct($idsoc, $callback=NULL, $pulsanti=true) {
+		$this->ctrl = new ConsiglioCtrl($idsoc, true, $callback);
+		if($pulsanti)
+			$this->ctrl->getForm()->addSubmit('Aggiorna consiglio');
+		$this->form = new FormView($this->ctrl->getForm());
+		$this->pulsanti = $pulsanti;
+		$this->popup = new NuovoTessPop($idsoc, NULL);
+	}
+	
+	public function getSubview() {
+		return array($this->form, $this->popup);
+	}
+	
+	function stampa()
+	{
+		$this->popup->stampa();
+		
+		/*@var $cons Consiglio*/
+		$cons = $this->ctrl->getConsiglio();
+		$fv = $this->form;
+		
+		if ($this->ctrl->haErrori()) {
+			echo '<div class="alert alert-error text-center"><strong>Errore:</strong> '; 
+			echo $this->ctrl->getErrori();
+			echo '</div>';
+		}
+		
+		$fv->stampaInizioForm();
+		echo '<div class="controls obbligatorio text-center">* Campi obbligatori</div><div class="row">';
+		echo '<div class="form-horizontal"><div class="span6">';
+		
+		foreach(Consiglio::getRuoli() as $ruolo)
+		{
+			if ($ruolo != Consiglio::DIRETTORETECNICO)
+				$this->stampaRuolo($ruolo, $fv);
+		}
+		echo '</div><div class="span6">';
+		$this->stampaRuolo(Consiglio::DIRETTORETECNICO, $fv);
+		
+		echo "</div></div></div>";
+		
+		if($this->pulsanti) {
+			echo '<div class="form-actions text-right">';
+			$fv->stampaSubmit(array('class'=>'btn-primary'));
+			echo '</div>';
+		}
+		if($this->pulsanti)
+			$fv->stampaFineForm();
+	}
+	
+	/**
+	 * 
+	 * @param int $ruolo
+	 * @param FormView $fv
+	 */
+	private function stampaRuolo($ruolo, $fv) {
+		$nr = $this->ctrl->getNomeRuolo($ruolo);
+		$el = $fv->getElem($ruolo);
+		$obblig = $el->getFormElem()->isObbligatorio();
+		
+		echo "<div class=\"control-group";
+		if ($this->ctrl->haErrori($ruolo)) echo ' error';
+		echo "\">\n";
+		echo '<label class="control-label';
+		if ($obblig) echo ' obbligatorio';
+		echo '">';
+		if ($obblig) echo '* ';
+		echo "$nr</label>\n";
+		?>
+				<div class="controls form-inline"><?php $el->stampa(NULL); ?>
+				<button class="btn btn-mini" type="button" onclick="nuovoTesseratoPop.mostra('<?php echo $ruolo; ?>')"><i class="icon-plus"></i></button>
+				</div>
+		<?php 
+		echo "</div>";
+	}
+	
+}

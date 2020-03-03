@@ -1,0 +1,45 @@
+<html xmlns:x="urn:schemas-microsoft-com:office:excel">
+
+<head>
+
+    <!--[if gte mso 9]>
+
+    <xml>
+
+        <x:ExcelWorkbook>
+
+            <x:ExcelWorksheets>
+
+                <x:ExcelWorksheet>
+
+                    <x:Name>A.S.D. KARATE SHOTOKAN TRADIZIONALE SPILAMBERTO</x:Name>
+
+                    <x:WorksheetOptions>
+
+                        <x:Print>
+
+                            <x:ValidPrinterInfo/>
+
+                        </x:Print>
+
+                    </x:WorksheetOptions>
+
+                </x:ExcelWorksheet>
+
+            </x:ExcelWorksheets>
+
+        </x:ExcelWorkbook>
+
+    </xml>
+
+    <![endif]-->
+
+    
+
+<meta charset="utf-8" />
+
+
+
+</head>
+
+<table border="1"><tr><td><strong>Nome</strong></td><td><strong>Cognome</strong></td><td><strong>Nome polizza </strong></td><td><strong>Nome societa</strong></td><td><strong>Data richiesta</strong></td><td><strong>Prezzo</strong></td><td><strong>Tipo polizza</strong></td></tr><tr><td  bgcolor="#FFFF00" >Alberto</td><td  bgcolor="#FFFF00" >Rosti</td><td  bgcolor="#FFFF00" >RC Tecnici Istruttori Allenatori e Maestri  </td><td  bgcolor="#FFFF00" >A.S.D. KARATE SHOTOKAN TRADIZIONALE SPILAMBERTO</td><td  bgcolor="#FFFF00" >07-01-2020</td><td  bgcolor="#FFFF00" >00,00</td><td  bgcolor="#FFFF00" >Tesserato</td></tr><tr><td  bgcolor="#FFFF00" >Maurizio</td><td  bgcolor="#FFFF00" >Perriello</td><td  bgcolor="#FFFF00" >RC Tecnici Istruttori Allenatori e Maestri  </td><td  bgcolor="#FFFF00" >A.S.D. KARATE SHOTOKAN TRADIZIONALE SPILAMBERTO</td><td  bgcolor="#FFFF00" >07-01-2020</td><td  bgcolor="#FFFF00" >00,00</td><td  bgcolor="#FFFF00" >Tesserato</td></tr><tr><td  bgcolor="#FFFF00" >Patrizio</td><td  bgcolor="#FFFF00" >Imela</td><td  bgcolor="#FFFF00" >RC Tecnici Istruttori Allenatori e Maestri  </td><td  bgcolor="#FFFF00" >A.S.D. KARATE SHOTOKAN TRADIZIONALE SPILAMBERTO</td><td  bgcolor="#FFFF00" >07-01-2020</td><td  bgcolor="#FFFF00" >00,00</td><td  bgcolor="#FFFF00" >Tesserato</td></tr><tr><td  bgcolor="#FFFF00" >Carlo</td><td  bgcolor="#FFFF00" >Bevini</td><td  bgcolor="#FFFF00" >RC Tecnici Istruttori Allenatori e Maestri  </td><td  bgcolor="#FFFF00" >A.S.D. KARATE SHOTOKAN TRADIZIONALE SPILAMBERTO</td><td  bgcolor="#FFFF00" >07-01-2020</td><td  bgcolor="#FFFF00" >00,00</td><td  bgcolor="#FFFF00" >Tesserato</td></tr><tr><td  bgcolor="#FFFF00" >Davide</td><td  bgcolor="#FFFF00" >Baraccani</td><td  bgcolor="#FFFF00" >RC Tecnici Istruttori Allenatori e Maestri  </td><td  bgcolor="#FFFF00" >A.S.D. KARATE SHOTOKAN TRADIZIONALE SPILAMBERTO</td><td  bgcolor="#FFFF00" >07-01-2020</td><td  bgcolor="#FFFF00" >00,00</td><td  bgcolor="#FFFF00" >Tesserato</td></tr></table><br><br><table border="1"><tr><td><strong>Nome società</strong></td><td><strong>Totale da pagare</strong></td></tr><tr><td  bgcolor="#FF0000" >A.S.D. KARATE SHOTOKAN TRADIZIONALE SPILAMBERTO</td><td  bgcolor="#FF0000" >&euro; 0,00</td></tr></table></html>

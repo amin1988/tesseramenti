@@ -1,0 +1,255 @@
+<?php
+if (!defined('_BASE_DIR_')) exit();
+include_model('Modello');
+include_class('Data');
+
+class Assicurazione extends Modello {
+
+	/**
+	 * @param int $idtess
+	 * @param string $tessera
+	 * @param Data $valido_da
+	 * @param Data $valido_a
+	 * @return Assicurazione
+	 */
+	public static function crea($idtess, $tessera, $valido_da, $valido_a=NULL) {
+		if ($valido_a === NULL) {
+			$anno = $valido_da->getAnno();
+			if (in_rinnovo($valido_da))
+				$anno++;
+			$valido_a = new Data($anno, 12, 31);
+		}
+		
+		$ultima = AssicurazioneUtil::get()->getUltimaAssicurazione($idtess);
+		if ($ultima !== NULL && $ultima->getValidoA()->confronta($valido_da) >= 0) {
+			//questo diventa valido quando scade l'ultimo
+			$valido_da = $ultima->getValidoA()->successiva();
+		}
+		
+		$a = new Assicurazione(NULL);
+		$a->set('idtesserato', $idtess);
+		$a->set('tessera', $tessera);
+		$a->setData('valido_da', $valido_da);
+		$a->setData('valido_a', $valido_a);
+		
+		return $a;
+	}
+	
+	public function __construct($id) {
+		parent::__construct('assicurazioni', 'idassicurazione', $id);
+	}
+
+	/**
+	 * 
+	 * @return int 
+	 */
+	public function getIDTesserato() {
+		return $this->get('idtesserato');
+	}
+
+	/**
+	 * 
+	 * @return string 
+	 */
+	public function getTessera() {
+		return $this->get('tessera');
+	}
+
+	/**
+	 * 
+	 * @return Data 
+	 */
+	public function getValidoDa() {
+		return $this->getData('valido_da');
+	}
+
+	/**
+	 * 
+	 * @return Data 
+	 */
+	public function getValidoA() {
+		return $this->getData('valido_a');
+	}
+	
+	protected function insert() {
+		$res = parent::insert();
+		if (!$res) return false;
+		$db = Database::get();
+		//elimina la tessera dagli invii
+		$ntess = $this->getTessera();
+		$idt = $this->getIDTesserato();
+		$db->delete('assicurazioni_invii', "tessera = '$ntess'");
+		$db->update('assicurazioni_invii', array('idtesserato'=>NULL, 'ts'=>NULL), "idtesserato='$idt'");
+		return true;
+	}
+}
+
+class AssicurazioneUtil {
+	private static $inst = NULL;
+	
+	/**
+	 * @return AssicurazioneUtil 
+	 */
+	public static function get() {
+		if (self::$inst === NULL) self::$inst = new AssicurazioneUtil();
+		return self::$inst;
+	}
+	
+	/**
+	 * Restituisce il numero di tessere ancora disponibili
+	 * @return int
+	 */
+	public function tessereDisponibili() {
+		$anno = DataUtil::get()->oggi()->getAnno();
+		if(in_rinnovo())
+			$anno++;
+		return Database::get()->field('assicurazioni_invii', 'COUNT(*)', "idtesserato IS NULL AND anno='$anno'");
+	}
+	
+	/**
+	 * Restituisce il numero di tessere inutilizzate negli anni passati
+	 * @return int
+	 */
+	public function tessereAnniPassati() {
+		$anno = DataUtil::get()->oggi()->getAnno();
+		return Database::get()->field('assicurazioni_invii', 'COUNT(*)', "idtesserato IS NULL AND anno='$anno'");
+	}
+	
+	/**
+	 * Restitusice il numero di tessera attuale di un tesserato
+	 * @param int $idtess
+	 * @return string|NULL
+	 */
+	public function getTesseraAttuale($idtess) {
+		return Database::get()->field('assicurazioni_correnti', 'tessera', "idtesserato='$idtess'");
+	}
+	
+	/**
+	 * Restituisce l'ID del tesserato associato ad una certa tessera (solo confermati)
+	 * @param string $tessera la tessera da cercare
+	 * @return int l'ID del tesserato o NULL se la tessera non è associata  
+	 */
+	public function cercaAssicurato($tessera) {
+		return Database::get()->field('assicurazioni', 'idtesserato', "tessera='$tessera'");
+	}
+	
+	/**
+	 * Restituisce l'assicurazione più recente di un tesserato
+	 * @param int $idtess
+	 * @return Assicurazione
+	 */
+	public function getUltimaAssicurazione($idtess) {
+		$rs = Database::get()->select('assicurazioni', 
+				"idtesserato='$idtess' ORDER BY valido_a DESC, valido_da DESC LIMIT 1");
+		$row = $rs->fetch_assoc();
+		if ($row === NULL) return NULL;
+		return Modello::_creaConDati('Assicurazione', $row);
+	}
+		
+	/**
+	 * Associa una tessera ad un tesserato e restituisce la tessera associata
+	 * @param int $idtess ID del tesserato
+	 * @return string la tessera associata
+	 */
+	public function associaTessera($idtess) {
+		$anno = DataUtil::get()->oggi()->getAnno();
+		if(in_rinnovo())
+			$anno++;
+		
+		$db = Database::get();
+		$db->update('IGNORE assicurazioni_invii', array('idtesserato'=>$idtess), "idtesserato IS NULL AND anno='$anno' LIMIT 1");
+		return $db->field('assicurazioni_invii', 'tessera', "idtesserato = '$idtess'");
+	}
+	
+	/**
+	 * Restituisce l'elenco dei tesserati assicurabili che non hanno un'assicurazione attiva.
+	 * Un tesserato è assicurabile se la società è iscritta all'ACSI e se ha almeno un pagamento attivo
+	 * oppure fa parte del consiglio
+	 * @param bool $rinnovo [def:false] true per considerare solo pagamenti e assicurazioni rinnovati
+	 * @return int[] ID tesserati
+	 */
+	public function nonAssicurati($rinnovo=false) {
+		//TODO ottimizzare query
+		
+		$res = array();
+		$db = Database::get();
+		//legge i tesserati
+		if ($rinnovo)
+			$rs = $db->select('da_assicurare_rinnovati');
+		else
+			$rs = $db->select('da_assicurare_correnti');
+		while($row = $rs->fetch_assoc())
+			$res[$row['idtesserato']] = $row['idtesserato'];
+		
+		//legge i consigli
+		if ($rinnovo) {
+			$tab_pag = 'pagamenti_rinnovati';
+			$tab_ass = 'assicurazioni_rinnovate';
+		} else {
+			$tab_pag = 'pagamenti_correnti';
+			$tab_ass = 'assicurazioni_correnti';
+		}
+		$rs = $db->select('tesserati_consiglio c INNER JOIN (SELECT DISTINCT idsocieta FROM '.$tab_pag
+				. ' WHERE data_pagamento IS NOT NULL) p USING(idsocieta) INNER JOIN societa s USING(idsocieta)',
+				's.acsi IS NOT NULL AND idtesserato NOT IN (SELECT idtesserato FROM  assicurazioni_invii '
+				. 'WHERE idtesserato IS NOT NULL UNION SELECT idtesserato FROM '.$tab_ass.')');
+		while($row = $rs->fetch_assoc())
+			$res[$row['idtesserato']] = $row['idtesserato'];
+		
+		return $res;
+	}
+	
+	/**
+	 * Restituisce l'elenco dei tesserati a cui è stato associato un numero tessera ma non è stato confermato
+	 * @return array formato idtesserato => tessera
+	 */
+	public function inviati() {
+		$res = array();
+		if(in_rinnovo())
+		{
+			$anno = date('Y');
+			$data = $anno."-08-31";
+		}
+		else 
+		{
+			$anno = date('Y');
+			$anno--;
+			$data = $anno."-08-31";
+		}
+// 		$rs = Database::get()->select('assicurazioni_invii', 'idtesserato IS NOT NULL'); prova modifica
+		$rs = Database::get()->select('assicurazioni_invii', "idtesserato IS NOT NULL AND ts > '$data'");
+		while ($row = $rs->fetch_assoc()) 
+			$res[$row['idtesserato']] = $row['tessera'];
+		return $res;
+	}
+	
+	/**
+	 * Restituisce l'ID del tesserato a cui è stata associata una tessera
+	 * @param string $tessera numero tessera
+	 * @return int o NULL
+	 */
+	public function tesseratoInviato($tessera) {
+		return Database::get()->field('assicurazioni_invii', 'idtesserato', "tessera='$tessera'");
+	}
+	
+	/**
+	 * Annulla tutti gli invii in sospeso
+	 */
+	public function annullaInvii() {
+		Database::get()->update('assicurazione_invii', array('idtesserato' => NULL, 'ts' => NULL));
+	}
+	
+	/**
+	 * Restituisce un array contenente gli id dei tesserati che hanno un tesserino da stampare
+	 */
+	public function nonStampate($valido) {
+		$rs = Database::get()->select('assicurazioni',"stampata=0 AND valido_a>'$valido'","idtesserato");
+		
+		$ar_idt = array();
+		while($row = $rs->fetch_assoc())
+			$ar_idt[] = $row['idtesserato'];
+		
+		return $ar_idt;
+	}
+}
+
